@@ -2,7 +2,7 @@ import pygame
 import os
 
 class Player:
-    def __init__(self, x, y, speed, scale_factor=2.0):  # Adicione scale_factor como parâmetro
+    def __init__(self, x, y, speed, scale_factor=2.0):  
         # Carrega o tileset
         self.tileset = pygame.image.load(os.path.join("assets/images", "player_tileset.png"))
         self.tileset_width = self.tileset.get_width() // 4  # 4 colunas
@@ -21,6 +21,7 @@ class Player:
         self.rect = self.current_sprite.get_rect(center=(x, y))
         self.speed = speed
         self.direction = 'down'
+        self.health = 4
         self.animation_frame = 0
         self.animation_speed = 10  # Quão rápido a animação muda
         self.animating = False
@@ -31,20 +32,20 @@ class Player:
         move_x = 0
         move_y = 0
 
-        if keys[pygame.K_LEFT]:
+        if keys[pygame.K_LEFT] or keys[pygame.K_a]:
             move_x = -self.speed
             self.direction = 'left'
             self.animating = True
-        elif keys[pygame.K_RIGHT]:
+        elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
             move_x = self.speed
             self.direction = 'right'
             self.animating = True
         
-        if keys[pygame.K_UP]:
+        if keys[pygame.K_UP] or keys[pygame.K_w]:
             move_y = -self.speed
             self.direction = 'up'
             self.animating = True
-        elif keys[pygame.K_DOWN]:
+        elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
             move_y = self.speed
             self.direction = 'down'
             self.animating = True

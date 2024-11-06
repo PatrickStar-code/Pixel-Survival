@@ -3,8 +3,8 @@ import random
 import os
 import math
 
-class Enemy:
-    def __init__(self, player, speed, screen_width, screen_height, scale_factor=1.25):
+class Enemy2:
+    def __init__(self, player, speed, screen_width, screen_height, scale_factor=2.0):
         # Carregar e redimensionar as imagens de animação
         self.images = [
             pygame.transform.scale(
@@ -23,7 +23,7 @@ class Enemy:
         self.animation_frame = 0
         self.animation_speed = 10  # Ajuste para definir a velocidade de animação
         self.current_sprite = self.images[0]
-        self.health = 1
+        self.health = 3
 
     def spawn_outside_screen(self, screen_width, screen_height):
         # Escolhe um ponto aleatório fora das bordas da tela
