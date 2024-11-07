@@ -1,140 +1,105 @@
 import pygame
-import os
-import random
-from player import Player
-from enemy import Enemy
-from enemy2 import Enemy2 
-from bullet import Bullet  
-from upgrade import Upgrade
+import sys
+import json
+from game import run_game  # Função principal do jogo no game.py
 
-# Inicializa o Pygame
+# Inicializa o Pygame e define a tela
 pygame.init()
-
-# Configurações da tela
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Pixel Survival")
+pygame.display.set_caption("Pixel Survival Menu")
 
-# Carrega o fundo e a imagem de coração
-BACKGROUND_IMAGE = pygame.image.load(os.path.join("assets/images", "background.png"))
-BACKGROUND_IMAGE = pygame.transform.scale(BACKGROUND_IMAGE, (WIDTH, HEIGHT))
-HEART_IMAGE = pygame.image.load(os.path.join("assets/images", "heart.png"))
-HEART_IMAGE = pygame.transform.scale(HEART_IMAGE, (40, 40))
+# Configurações de cores
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+GRAY = (200, 200, 200)
+LIGHT_GRAY = (230, 230, 230)
 
-# Cria o jogador
-player = Player(WIDTH // 2, HEIGHT // 2, speed=2)
+# Fonte
+font = pygame.font.Font(None, 60)
+button_font = pygame.font.Font(None, 40)
 
-# Configurações dos inimigos e balas
-enemy_speed = 1.5
-enemies = []
-bullets = []
-enemy_spawn_delay = 2000
-spawn_event = pygame.USEREVENT + 1
-pygame.time.set_timer(spawn_event, enemy_spawn_delay)
+# Função para desenhar o texto centralizado
+def draw_text(text, font, color, surface, x, y):
+    text_obj = font.render(text, True, color)
+    text_rect = text_obj.get_rect(center=(x, y))
+    surface.blit(text_obj, text_rect)
 
-# Configurações da pontuação e dificuldade
-score = 0
-difficulty_level = 1
-next_difficulty_increase = 100
+# Função para desenhar um botão com hover e registrar cliques únicos
+def draw_button(text, x, y, width, height, action=None):
+    mouse = pygame.mouse.get_pos()
+    click = pygame.mouse.get_pressed()
 
-# Configurações de tempo e tiro
-clock = pygame.time.Clock()
-shoot_delay = 500  # Intervalo entre tiros em milissegundos
-last_shot_time = pygame.time.get_ticks()
+    # Muda a cor do botão ao passar o mouse
+    color = LIGHT_GRAY if x + width > mouse[0] > x and y + height > mouse[1] > y else GRAY
+    pygame.draw.rect(screen, color, (x, y, width, height))
+    draw_text(text, button_font, BLACK, screen, x + width // 2, y + height // 2)
 
-# Função para atualizar a dificuldade
-def update_difficulty():
-    global difficulty_level, enemy_spawn_delay, enemy_speed, next_difficulty_increase
-    difficulty_level += 1
+    # Verifica se o botão foi clicado e realiza ação
+    if click[0] == 1 and x + width > mouse[0] > x and y + height > mouse[1] > y:
+        pygame.time.delay(200)  # Pequeno atraso para evitar múltiplos cliques
+        if action is not None:
+            action()
 
-    # Aumenta a dificuldade conforme o nível
-    enemy_speed += 0.2
-    enemy_spawn_delay = max(500, enemy_spawn_delay - 200)
-    pygame.time.set_timer(spawn_event, enemy_spawn_delay)
+# Função para mostrar a tela de pontuações
+def show_scores():
+    try:
+        with open("scores.json", "r") as f:
+            scores = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        scores = []
 
-# Função para spawnar inimigos
-def spawn_enemy():
-    # Define a chance de spawnar `Enemy2` após 200 pontos
-    if score >= 200 and random.random() < 0.5:  # 50% de chance para `Enemy2`
-        enemy = Enemy2(player, enemy_speed, WIDTH, HEIGHT)
-    else:
-        enemy = Enemy(player, enemy_speed, WIDTH, HEIGHT)
-    enemies.append(enemy)
+    # Ordena as pontuações em ordem decrescente
+    scores.sort(key=lambda x: x["score"], reverse=True)
 
-# Loop principal do jogo
+    showing_scores = True
+    while showing_scores:
+        screen.fill(WHITE)
+        draw_text("Pontuações", font, BLACK, screen, WIDTH // 2, 50)
+
+        # Exibe as 10 melhores pontuações
+        for i, score in enumerate(scores[:10]):
+            score_text = f"{i + 1}. Score: {score['score']}"
+            draw_text(score_text, button_font, BLACK, screen, WIDTH // 2, 100 + i * 40)
+
+        # Instrução para retornar ao menu
+        draw_text("Pressione ESC para voltar", button_font, BLACK, screen, WIDTH // 2, HEIGHT - 50)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                showing_scores = False
+
+        pygame.display.flip()
+
+# Funções para os botões
+def start_game():
+    run_game()  # Executa o jogo ao clicar em "Iniciar"
+
+def quit_game():
+    pygame.quit()
+    sys.exit()
+
+# Loop principal do menu
 running = True
 while running:
+    screen.fill(WHITE)
+
+    # Desenha o título do jogo
+    draw_text("Pixel Survival", font, BLACK, screen, WIDTH // 2, HEIGHT // 3)
+
+    # Desenha os botões com ações únicas
+    draw_button("Iniciar", WIDTH // 2 - 100, HEIGHT // 2, 200, 50, start_game)
+    draw_button("Pontuações", WIDTH // 2 - 100, HEIGHT // 2 + 70, 200, 50, show_scores)
+    draw_button("Sair", WIDTH // 2 - 100, HEIGHT // 2 + 140, 200, 50, quit_game)
+
+    # Eventos
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        elif event.type == spawn_event:
-            spawn_enemy()
-
-    # Movimentação do jogador e atualização de animação
-    keys = pygame.key.get_pressed()
-    player.move(keys)
-    player.update()
-
-    # Tiro automático do jogador
-    current_time = pygame.time.get_ticks()
-    if enemies and current_time - last_shot_time > shoot_delay:
-        closest_enemy = min(enemies, key=lambda e: (player.rect.centerx - e.rect.centerx)**2 + (player.rect.centery - e.rect.centery)**2)
-        bullet = Bullet(player.rect.centerx, player.rect.centery, closest_enemy)
-        bullets.append(bullet)
-        last_shot_time = current_time
-
-    # Atualiza balas e checa colisão com inimigos
-    for bullet in bullets[:]:
-        bullet.update()
-        for enemy in enemies[:]:
-            if bullet.rect.colliderect(enemy.rect):
-                enemy.health -= 1
-                bullets.remove(bullet)
-                if enemy.health <= 0:
-                    enemies.remove(enemy)
-                    score += 10  # Incrementa a pontuação ao derrotar um inimigo
-                break
-
-    # Atualiza os inimigos e verifica colisões com o jogador
-    for enemy in enemies[:]:
-        enemy.update()
-        if player.rect.colliderect(enemy.rect):
-            player.health -= 1
-            enemies.remove(enemy)
-            if player.health <= 0:
-                print("Game Over")
-                running = False
-
-    # Aumenta a dificuldade ao atingir a pontuação alvo
-    if score >= next_difficulty_increase:
-        update_difficulty()
-        next_difficulty_increase += 100
-
-    # Renderização
-    screen.blit(BACKGROUND_IMAGE, (0, 0))
-    player.draw(screen)
-
-    # Desenha os inimigos e balas
-    for enemy in enemies:
-        enemy.draw(screen)
-    for bullet in bullets:
-        bullet.draw(screen)
-
-    # Exibe a vida do jogador
-    for i in range(player.health):
-        screen.blit(HEART_IMAGE, (10 + i * 25, 10))
-
-    # Exibe a pontuação
-    font = pygame.font.Font(None, 36)
-    score_text = font.render(f"Score: {score}", True, (255, 255, 255))
-    screen.blit(score_text, (WIDTH - 150, 10))
-
-    # Exibe Level
-    font = pygame.font.Font(None, 36)
-    level_text = font.render(f" {difficulty_level}", True, (255, 255, 255))
-    screen.blit(level_text, (WIDTH/2, 10))
 
     pygame.display.flip()
-    clock.tick(60)
 
 pygame.quit()
