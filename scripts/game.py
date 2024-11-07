@@ -1,7 +1,7 @@
 import pygame
 import os
 import random
-import json  # Importa o módulo JSON
+import json
 from player import Player
 from enemy import Enemy
 from enemy2 import Enemy2
@@ -24,7 +24,6 @@ HEART_IMAGE = pygame.transform.scale(HEART_IMAGE, (40, 40))
 
 # Função para salvar a pontuação em um arquivo JSON
 def save_score(score):
-    # Salva a pontuação em um arquivo JSON
     score_data = {"score": score}
 
     # Verifica se o arquivo existe e carrega as pontuações existentes
@@ -35,7 +34,6 @@ def save_score(score):
         scores = []
 
     scores.append(score_data)
-
     with open("scores.json", "w") as f:
         json.dump(scores, f, indent=4)
 
@@ -50,21 +48,19 @@ def run_game():
     next_difficulty_increase = 100
     enemy_spawn_delay = 2000
     enemy_speed = 1.5
-    save_scores = False
-    pygame.time.set_timer(pygame.USEREVENT + 1, enemy_spawn_delay)
-
-    boss_spawned = False  # Flag para garantir que o boss apareça apenas uma vez
+    boss_spawned = False
     boss_level = 10
-
+    game_over = False
+    score_saved = False  # Flag para salvar a pontuação apenas uma vez
 
     clock = pygame.time.Clock()
     shoot_delay = 500
     last_shot_time = pygame.time.get_ticks()
-    game_over = False
+    pygame.time.set_timer(pygame.USEREVENT + 1, enemy_spawn_delay)
 
     # Função interna para resetar o jogo
     def reset_game():
-        nonlocal player, enemies, bullets, score, difficulty_level, next_difficulty_increase, enemy_speed, enemy_spawn_delay, game_over, boss_spawned
+        nonlocal player, enemies, bullets, score, difficulty_level, next_difficulty_increase, enemy_speed, enemy_spawn_delay, game_over, boss_spawned, score_saved
         player = Player(WIDTH // 2, HEIGHT // 2, speed=2)
         enemies = []
         bullets = []
@@ -73,12 +69,10 @@ def run_game():
         next_difficulty_increase = 100
         enemy_spawn_delay = 2000
         enemy_speed = 1.5
-        pygame.time.set_timer(pygame.USEREVENT + 1, enemy_spawn_delay)
         game_over = False
-        boss_spawned = False  # Resetar o flag do boss
-        boss_level = 10
-        save_scores = False
-
+        boss_spawned = False
+        score_saved = False
+        pygame.time.set_timer(pygame.USEREVENT + 1, enemy_spawn_delay)
 
     # Loop principal do jogo
     while True:
@@ -86,24 +80,27 @@ def run_game():
             if event.type == pygame.QUIT:
                 return  # Sai do jogo e retorna ao menu
             elif event.type == pygame.USEREVENT + 1 and not game_over:
+                # Gerenciamento de spawn do boss e inimigos
                 if difficulty_level == boss_level and not boss_spawned:
-                    # Spawn do Boss apenas no nível 10
-                    enemies.append(Boss(player, enemy_speed, WIDTH, HEIGHT))  
+                    enemies.append(Boss(player, enemy_speed, WIDTH, HEIGHT))
                     boss_level += 10
-                    boss_spawned = True  # Marca que o boss foi spawnado
+                    boss_spawned = True
                 else:
-                    # Spawna inimigos alternadamente entre `Enemy` e `Enemy2` para níveis abaixo de 10
-                    if random.random() < 0.5:
-                        enemies.append(Enemy2(player, enemy_speed, WIDTH, HEIGHT))
+                # Verifica o nível de dificuldade para spawnar inimigos
+                    if difficulty_level >= 3:
+                        # A partir do nível 3, 50% de chance de spawnar Enemy ou Enemy2
+                        enemy_type = Enemy2 if random.random() < 0.5 else Enemy
                     else:
-                        enemies.append(Enemy(player, enemy_speed, WIDTH, HEIGHT))
+                        # Antes do nível 3, apenas spawn de Enemy
+                        enemy_type = Enemy
+                    enemies.append(enemy_type(player, enemy_speed, WIDTH, HEIGHT))
+
 
             elif game_over and event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-                reset_game()
-           
+                reset_game()  # Reinicia o jogo ao pressionar 'R'
 
         if not game_over:
-            # Atualizações do jogador
+            # Atualizações do jogador e inimigos
             keys = pygame.key.get_pressed()
             player.move(keys)
             player.update()
@@ -112,11 +109,10 @@ def run_game():
             current_time = pygame.time.get_ticks()
             if enemies and current_time - last_shot_time > shoot_delay:
                 closest_enemy = min(enemies, key=lambda e: (player.rect.centerx - e.rect.centerx)**2 + (player.rect.centery - e.rect.centery)**2)
-                bullet = Bullet(player.rect.centerx, player.rect.centery, closest_enemy)
-                bullets.append(bullet)
+                bullets.append(Bullet(player.rect.centerx, player.rect.centery, closest_enemy))
                 last_shot_time = current_time
 
-            # Atualiza balas e checa colisão com inimigos
+            # Atualização das balas e checagem de colisão com inimigos
             for bullet in bullets[:]:
                 bullet.update()
                 for enemy in enemies[:]:
@@ -125,21 +121,20 @@ def run_game():
                         bullets.remove(bullet)
                         if enemy.health <= 0:
                             enemies.remove(enemy)
-                            score += 10  # Incrementa a pontuação ao derrotar um inimigo
+                            score += 10
                         break
 
-            # Atualiza os inimigos e verifica colisões com o jogador
+            # Atualização dos inimigos e verificação de colisões com o jogador
             for enemy in enemies[:]:
                 enemy.update()
                 if player.rect.colliderect(enemy.rect):
                     player.health -= 1
                     enemies.remove(enemy)
-                   
 
-            # Aumenta a dificuldade ao atingir a pontuação alvo
+            # Aumenta a dificuldade a cada 100 pontos
             if score >= next_difficulty_increase:
                 difficulty_level += 1
-                enemy_speed += 0.2
+                enemy_speed += 0.1
                 enemy_spawn_delay = max(500, enemy_spawn_delay - 200)
                 pygame.time.set_timer(pygame.USEREVENT + 1, enemy_spawn_delay)
                 next_difficulty_increase += 100
@@ -148,20 +143,14 @@ def run_game():
         screen.blit(BACKGROUND_IMAGE, (0, 0))
         player.draw(screen)
 
-         
-
-        # Desenha os inimigos e balas
         for enemy in enemies:
             enemy.draw(screen)
         for bullet in bullets:
             bullet.draw(screen)
-        
 
-        # Exibe a vida do jogador
         for i in range(player.health):
             screen.blit(HEART_IMAGE, (10 + i * 25, 10))
 
-        # Exibe a pontuação e nível
         font = pygame.font.Font(None, 36)
         score_text = font.render(f"Score: {score}", True, (255, 255, 255))
         screen.blit(score_text, (WIDTH - 150, 10))
@@ -169,7 +158,10 @@ def run_game():
         screen.blit(level_text, (WIDTH / 2, 10))
 
         if player.health <= 0:
-            game_over = True  # Marca o jogo como finalizado
+            game_over = True
+            if not score_saved:
+                save_score(score)
+                score_saved = True
 
         if game_over:
             # Mensagem de "Game Over" e instruções para reiniciar
@@ -179,13 +171,8 @@ def run_game():
             font = pygame.font.Font(None, 36)
             restart_text = font.render("Pressione 'R' para reiniciar", True, (255, 255, 255))
             screen.blit(restart_text, (WIDTH // 2 - restart_text.get_width() // 2, HEIGHT // 2 + 40))
-            if(save_scores == False):
-                save_score(score)  # Salva a pontuação do jogador
-                save_scores = True
-
 
         pygame.display.flip()
         clock.tick(60)
 
     pygame.quit()
-
