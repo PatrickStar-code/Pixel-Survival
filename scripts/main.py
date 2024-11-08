@@ -1,3 +1,4 @@
+import os
 import pygame
 import sys
 import json
@@ -7,7 +8,8 @@ from game import run_game  # Função principal do jogo no game.py
 pygame.init()
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Pixel Survival Menu")
+pygame.display.set_caption("Pixel Survival")
+pygame.display.set_icon(pygame.image.load(os.path.join("assets/images", "icon.png")))
 
 # Configurações de cores
 WHITE = (255, 255, 255)

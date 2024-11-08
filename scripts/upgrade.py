@@ -1,24 +1,32 @@
-import random
 import pygame
+import random
 
 class Upgrade:
-    def __init__(self, upgrade_type, x, y):
-        self.upgrade_type = upgrade_type  # Tipo do upgrade (movimento, ataque, dano, multishot)
-        self.rect = pygame.Rect(x, y, 30, 30)  # Área de colisão para pegar o upgrade
-        self.image = pygame.Surface((30, 30))  # Imagem do upgrade (simplificada como um quadrado)
-        self.image.fill((0, 255, 0))  # Cor verde para visualização
+    def __init__(self, x, y):
+        # Verifica se os parâmetros estão corretos
+        if x is None or y is None:
+            raise ValueError("Posição x e y são obrigatórias para o Upgrade.")
+        
+        self.x = x
+        self.y = y
+        self.types = ["speed", "attack_speed", "attack_power"]
+        self.type = random.choice(self.types)
+        
+        # Aqui removemos a imagem e vamos desenhar círculos
+        self.radius = 15  # Tamanho do círculo
+        self.color = self.get_color_based_on_type(self.type)
+        self.rect = pygame.Rect(x - self.radius, y - self.radius, self.radius * 2, self.radius * 2)
 
-    def apply_upgrade(self, player):
-        """Aplica o upgrade ao jogador"""
-        if self.upgrade_type == "move_speed":
-            player.move_speed = min(player.move_speed + 0.5, 5)  # Limite de velocidade
-        elif self.upgrade_type == "shoot_speed":
-            player.shoot_delay = max(player.shoot_delay - 50, 100)  # Limite mínimo de delay
-        elif self.upgrade_type == "damage":
-            player.damage = min(player.damage + 1, 10)  # Limite de dano
-        elif self.upgrade_type == "multishot":
-            player.multishot = True
+    def get_color_based_on_type(self, upgrade_type):
+        """Retorna a cor do upgrade com base no tipo."""
+        if upgrade_type == "speed":
+            return (0, 0, 255)  # Azul
+        elif upgrade_type == "attack_speed":
+            return (255, 165, 0)  # Laranja
+        elif upgrade_type == "attack_power":
+            return (255, 69, 0)  # Vermelho alaranjado
+        return (255, 255, 255)  # Branco como fallback
 
     def draw(self, screen):
-        """Desenha o upgrade na tela"""
-        screen.blit(self.image, self.rect.topleft)
+        """Desenha o upgrade na tela."""
+        pygame.draw.circle(screen, self.color, (self.x, self.y), self.radius)

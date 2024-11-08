@@ -3,91 +3,129 @@ import random
 import os
 import math
 
-from enemy import Enemy
+from enemy import Enemy  # Minions que o Boss invocará
 from projectile import Projectile
 
 class Boss(Enemy):
-    def __init__(self, player, speed, screen_width, screen_height, scale_factor=2.0):
+    def __init__(self, player, speed, screen_width, screen_height, scale_factor=2.0,dificulty=1):
         # Carregar o tileset do Boss
         tileset_path = os.path.join("assets/images/enemy", "bossTileSet.png")
         tileset = pygame.image.load(tileset_path)
         
-        # Suponha que o tileset tem as animações do Boss dispostas horizontalmente
-        frame_width = 74 # Largura de cada frame
-        frame_height = 74  # Altura de cada frame
-        num_frames = 1 # Número de frames na animação
+        # Configuração do sprite do Boss
+        frame_width = 74
+        frame_height = 74
+        num_frames = 1  
         
-        # Extrair as primeiras imagens do tileset
+        # Extrair a imagem do boss
         self.images = []
         for i in range(num_frames):
             frame = tileset.subsurface(pygame.Rect(i * frame_width, 0, frame_width, frame_height))
             self.images.append(pygame.transform.scale(frame, (frame_width * scale_factor, frame_height * scale_factor)))
 
-        # Iniciar o Boss com a posição fora da tela
-        self.rect = self.spawn_outside_screen(screen_width, screen_height)
+        # Tamanho da tela (tela onde o Boss deve aparecer)
+        self.screen_width = screen_width
+        self.screen_height = screen_height
 
-        # Definir variáveis de movimento e direção
+        # Definindo o tamanho inicial do Boss, mas sem o rect definido ainda
+        self.rect = pygame.Rect(0, 0, self.images[0].get_width(), self.images[0].get_height())
+
+        # Agora chamamos spawn_outside_screen para definir a posição inicial
+        self.rect = self.spawn_outside_screen()
+
+        # Atributos de movimento e direção
         self.speed = speed
         self.player = player
         self.animation_frame = 0
-        self.animation_speed = 10  # Velocidade de animação
+        self.animation_speed = 10
         self.current_sprite = self.images[0]
-        self.health = 10  # O Boss tem mais vida
-        self.attack_pattern = 0  # Inicia com um padrão de ataque
+        self.dificulty = dificulty
 
-        # Padrões de ataque, como por exemplo:
-        self.attack_types = ["shoot", "charge", "summon"]
+        self.health = 50 * self.dificulty  # Vida maior para o Boss
 
-        # Lista para armazenar projéteis disparados pelo Boss
+        # Padrões de ataque
+        self.attack_pattern = 0
+        self.attack_types = ["shoot", "summon"]
+        
+        # Lista para projéteis e minions
         self.projectiles = []
+        self.minions = []  # Para armazenar minions invocados
 
-        # Controladores de delay de disparo
-        self.shoot_delay = 60  # Delay entre disparos (em quadros, 60 quadros = 1 segundo)
-        self.time_since_last_shot = 0  # Controle do tempo desde o último disparo
+        # Controladores de delay
+        self.shoot_delay = 60
+        self.time_since_last_shot = 0
+        self.summon_delay = 10000  # Intervalo para invocar minions (10 segundos)
+        self.time_since_last_summon = 0
+
+        # Controle de tempo de troca de ataque
+        self.attack_switch_delay = 300  # Intervalo entre trocas de ataques (em frames)
+        self.attack_switch_counter = 0
+
+    def spawn_outside_screen(self):
+        """ Coloca o Boss fora da tela, mas perto da borda para que apareça rapidamente. """
+        edge = random.choice(["left", "right", "top", "bottom"])
+
+        if edge == "left":
+            return pygame.Rect(-self.rect.width, random.randint(0, self.screen_height), self.rect.width, self.rect.height)
+        elif edge == "right":
+            return pygame.Rect(self.screen_width + self.rect.width, random.randint(0, self.screen_height), self.rect.width, self.rect.height)
+        elif edge == "top":
+            return pygame.Rect(random.randint(0, self.screen_width), -self.rect.height, self.rect.width, self.rect.height)
+        elif edge == "bottom":
+            return pygame.Rect(random.randint(0, self.screen_width), self.screen_height + self.rect.height, self.rect.width, self.rect.height)
 
     def attack(self):
-        # Dependendo do padrão de ataque, o Boss faz algo diferente
         if self.attack_types[self.attack_pattern] == "shoot":
-            self.shoot_projectile()  # Lança projéteis
-        elif self.attack_types[self.attack_pattern] == "charge":
-            self.charge_attack()  # Avança em direção ao jogador
+            self.shoot_projectile()
         elif self.attack_types[self.attack_pattern] == "summon":
-            self.summon_minions()  # Invoca minions para ajudar
+            self.summon_minions()
 
     def shoot_projectile(self):
-        # Lógica para disparar projéteis
+        # Dispara projéteis em direção ao jogador
         if self.time_since_last_shot >= self.shoot_delay:
             projectile = Projectile(self.rect.centerx, self.rect.centery, self.player)
             self.projectiles.append(projectile)
-            print("Boss is shooting projectiles!")
             self.time_since_last_shot = 0
         else:
-            self.time_since_last_shot += 1  # Aumenta o tempo a cada quadro
-
-    def charge_attack(self):
-        # Lógica para o ataque de carga
-        print("Boss is charging at the player!")
+            self.time_since_last_shot += 1
 
     def summon_minions(self):
-        # Lógica para invocar minions
-        print("Boss is summoning minions!")
+        """ Invoca 5 minions próximos ao Boss """
+        if self.time_since_last_summon >= self.summon_delay:
+            for _ in range(5):
+                minion_x = self.rect.centerx + random.randint(-50, 50)
+                minion_y = self.rect.centery + random.randint(-50, 50)
+                # Assegurando que o minion seja uma instância da classe Enemy
+                minion = Enemy(self.player, self.speed, self.screen_width, self.screen_height)
+                minion.rect.center = (minion_x, minion_y)
+                self.minions.append(minion)  # Adiciona o minion à lista
+            self.time_since_last_summon = 0  # Resetando o tempo entre invocações
+            print("Boss is summoning minions!")
+        else:
+            self.time_since_last_summon += 1
 
     def update(self):
-        # Atualiza a posição e o ataque
+        # Atualiza o comportamento do Boss: segue o jogador
         self.move_towards_player()
-        self.attack()  # Chama o ataque conforme o padrão
+        
+        # Executa o ataque atual
+        self.attack()
 
         # Atualiza os projéteis disparados
         for projectile in self.projectiles[:]:
             projectile.update()
-
-            # Verifica se o projétil colidiu com o jogador
             if projectile.rect.colliderect(self.player.rect):
                 self.player.health -= 1
-                print(f"Player hit by projectile! Player health: {self.player.health}")
                 self.projectiles.remove(projectile)
 
-        # Atualiza o frame de animação
+        # Atualiza os minions invocados
+        for minion in self.minions[:]:
+            minion.update()
+            if minion.rect.colliderect(self.player.rect):
+                self.player.health -= 1
+                self.minions.remove(minion)  # Remove minions se colidirem com o player
+
+        # Atualiza a animação do Boss
         self.animation_frame += 1
         if self.animation_frame >= self.animation_speed * len(self.images):
             self.animation_frame = 0
@@ -101,3 +139,17 @@ class Boss(Enemy):
         # Desenha os projéteis disparados
         for projectile in self.projectiles:
             projectile.draw(screen)
+
+        # Desenha os minions invocados
+        for minion in self.minions:
+            minion.draw(screen)
+
+    def move_towards_player(self):
+        # O Boss sempre tenta se mover em direção ao jogador
+        direction_x = self.player.rect.centerx - self.rect.centerx
+        direction_y = self.player.rect.centery - self.rect.centery
+        angle = math.atan2(direction_y, direction_x)
+
+        # Movimentação contínua em direção ao jogador
+        self.rect.x += int(math.cos(angle) * self.speed)
+        self.rect.y += int(math.sin(angle) * self.speed)

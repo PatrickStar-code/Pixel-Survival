@@ -2,7 +2,7 @@ import pygame
 import math
 
 class Projectile:
-    def __init__(self, x, y, target, speed=5):
+    def __init__(self, x, y, target, speed=2):
         self.x = x
         self.y = y
         self.speed = speed

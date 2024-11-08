@@ -1,9 +1,10 @@
 import pygame
 import os
+import random
 
 class Player:
     def __init__(self, x, y, speed, scale_factor=2.0):  
-        # Carrega o tileset
+        # Parâmetros iniciais do jogador
         self.tileset = pygame.image.load(os.path.join("assets/images", "player_tileset.png"))
         self.tileset_width = self.tileset.get_width() // 4  # 4 colunas
         self.tileset_height = self.tileset.get_height() // 4  # 4 linhas
@@ -16,19 +17,20 @@ class Player:
             'right': [pygame.transform.scale(self.tileset.subsurface(pygame.Rect(i * self.tileset_width, 3 * self.tileset_height, self.tileset_width, self.tileset_height)), (int(self.tileset_width * scale_factor), int(self.tileset_height * scale_factor))) for i in range(4)],
         }
 
-        # Inicializa a animação
+        # Atributos do jogador
         self.current_sprite = self.sprites['down'][0]
         self.rect = self.current_sprite.get_rect(center=(x, y))
         self.speed = speed
+        self.attack_speed = 1000  # Tempo entre tiros em ms
+        self.attack_power = 1  # Dano inicial do jogador
         self.direction = 'down'
         self.health = 4
         self.animation_frame = 0
-        self.animation_speed = 10  # Quão rápido a animação muda
+        self.animation_speed = 10  # Velocidade da animação
         self.animating = False
 
     def move(self, keys):
-        # Movimenta o jogador com suporte para movimento diagonal
-        original_rect = self.rect.copy()  # Salva a posição original para checar colisões
+        # Movimenta o jogador
         move_x = 0
         move_y = 0
 
@@ -55,22 +57,25 @@ class Player:
         self.rect.y += move_y
 
         # Limitar o jogador à tela
-        if self.rect.x < 0:
-            self.rect.x = 0
-        if self.rect.x > 800 - self.rect.width:  # 800 é a largura da tela
-            self.rect.x = 800 - self.rect.width
-        if self.rect.y < 0:
-            self.rect.y = 0
-        if self.rect.y > 600 - self.rect.height:  # 600 é a altura da tela
-            self.rect.y = 600 - self.rect.height
+        self.rect.x = max(0, min(self.rect.x, 800 - self.rect.width))  # Largura da tela assumida como 800
+        self.rect.y = max(0, min(self.rect.y, 600 - self.rect.height))  # Altura da tela assumida como 600
 
         # Verifica se não está se movendo e para a animação
         if not (move_x or move_y):
             self.animating = False
 
+    def apply_upgrade(self, upgrade_type):
+        """Aplica um upgrade ao jogador"""
+        if upgrade_type == "speed":
+            self.speed += 0.1  # Aumenta a velocidade
+        elif upgrade_type == "attack_speed":
+            self.attack_speed = max(200, self.attack_speed - 5)  # Reduz o tempo entre tiros
+        elif upgrade_type == "attack_power":
+            self.attack_power += 0.5  # Aumenta o dano do ataque
+
     def update(self):
+        # Animação
         if self.animating:
-            # Atualiza o sprite atual baseado na direção e na animação
             if self.direction in self.sprites:
                 self.animation_frame += 1
                 if self.animation_frame >= self.animation_speed * len(self.sprites[self.direction]):
@@ -78,8 +83,8 @@ class Player:
                 sprite_index = self.animation_frame // self.animation_speed
                 self.current_sprite = self.sprites[self.direction][sprite_index]
         else:
-            # Se não está se movendo, mantém o sprite atual na posição final da animação
-            self.current_sprite = self.sprites[self.direction][0]  # Ou pode ser o sprite de parada
+            self.current_sprite = self.sprites[self.direction][0]  # Parado
 
     def draw(self, screen):
+        # Renderiza o jogador
         screen.blit(self.current_sprite, self.rect.topleft)
