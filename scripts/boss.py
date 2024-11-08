@@ -7,7 +7,7 @@ from enemy import Enemy  # Minions que o Boss invocará
 from projectile import Projectile
 
 class Boss(Enemy):
-    def __init__(self, player, speed, screen_width, screen_height, scale_factor=2.0,dificulty=1):
+    def __init__(self, dificulty ,player, speed, screen_width, screen_height, scale_factor=2.0):
         # Carregar o tileset do Boss
         tileset_path = os.path.join("assets/images/enemy", "bossTileSet.png")
         tileset = pygame.image.load(tileset_path)
@@ -34,14 +34,13 @@ class Boss(Enemy):
         self.rect = self.spawn_outside_screen()
 
         # Atributos de movimento e direção
+        self.dificulty = dificulty
         self.speed = speed
         self.player = player
         self.animation_frame = 0
         self.animation_speed = 10
         self.current_sprite = self.images[0]
-        self.dificulty = dificulty
-
-        self.health = 50 * self.dificulty  # Vida maior para o Boss
+        self.health = 50 * dificulty  
 
         # Padrões de ataque
         self.attack_pattern = 0
@@ -54,7 +53,7 @@ class Boss(Enemy):
         # Controladores de delay
         self.shoot_delay = 60
         self.time_since_last_shot = 0
-        self.summon_delay = 10000  # Intervalo para invocar minions (10 segundos)
+        self.summon_delay = 10000  # Intervalo para invocar minions (5 segundos)
         self.time_since_last_summon = 0
 
         # Controle de tempo de troca de ataque
@@ -90,16 +89,15 @@ class Boss(Enemy):
             self.time_since_last_shot += 1
 
     def summon_minions(self):
-        """ Invoca 5 minions próximos ao Boss """
+        # Invoca 5 minions próximos ao Boss
         if self.time_since_last_summon >= self.summon_delay:
             for _ in range(5):
                 minion_x = self.rect.centerx + random.randint(-50, 50)
                 minion_y = self.rect.centery + random.randint(-50, 50)
-                # Assegurando que o minion seja uma instância da classe Enemy
-                minion = Enemy(self.player, self.speed, self.screen_width, self.screen_height)
+                minion = Enemy(self.player, self.speed, self.rect.width, self.rect.height)
                 minion.rect.center = (minion_x, minion_y)
-                self.minions.append(minion)  # Adiciona o minion à lista
-            self.time_since_last_summon = 0  # Resetando o tempo entre invocações
+                self.minions.append(minion)
+            self.time_since_last_summon = 0
             print("Boss is summoning minions!")
         else:
             self.time_since_last_summon += 1
@@ -108,6 +106,13 @@ class Boss(Enemy):
         # Atualiza o comportamento do Boss: segue o jogador
         self.move_towards_player()
         
+        # Atualiza o contador de troca de ataque
+        self.attack_switch_counter += 1
+        if self.attack_switch_counter >= self.attack_switch_delay:
+            # Altera o padrão de ataque após o intervalo
+            self.attack_pattern = (self.attack_pattern + 1) % len(self.attack_types)
+            self.attack_switch_counter = 0  # Reseta o contador
+
         # Executa o ataque atual
         self.attack()
 
@@ -118,14 +123,14 @@ class Boss(Enemy):
                 self.player.health -= 1
                 self.projectiles.remove(projectile)
 
-        # Atualiza os minions invocados
+        # Atualiza minions invocados
         for minion in self.minions[:]:
             minion.update()
             if minion.rect.colliderect(self.player.rect):
                 self.player.health -= 1
-                self.minions.remove(minion)  # Remove minions se colidirem com o player
+                self.minions.remove(minion)
 
-        # Atualiza a animação do Boss
+        # Atualiza a animação
         self.animation_frame += 1
         if self.animation_frame >= self.animation_speed * len(self.images):
             self.animation_frame = 0
@@ -145,6 +150,7 @@ class Boss(Enemy):
             minion.draw(screen)
 
     def move_towards_player(self):
+        """ Movimenta o Boss em direção ao jogador. Essa é a movimentação padrão do Boss. """
         # O Boss sempre tenta se mover em direção ao jogador
         direction_x = self.player.rect.centerx - self.rect.centerx
         direction_y = self.player.rect.centery - self.rect.centery

@@ -45,7 +45,7 @@ def run_game():
     bullets = []
     upgrades = []  
     score = 0
-    difficulty_level = 10
+    difficulty_level = 1
     next_difficulty_increase = 100
     enemy_spawn_delay = 5000
     enemy_speed = 1.5
@@ -84,7 +84,7 @@ def run_game():
             elif event.type == pygame.USEREVENT + 1 and not game_over:
                 # Gerenciamento de spawn do boss e inimigos
                 if difficulty_level == boss_level and not boss_spawned:
-                    boss = Boss(player, enemy_speed, WIDTH, HEIGHT)
+                    boss = Boss(difficulty_level/10,player, enemy_speed, WIDTH, HEIGHT)
                     enemies.append(boss)
                     boss_level += 10
                     boss_spawned = True
@@ -121,16 +121,26 @@ def run_game():
                         bullets.remove(bullet)
                         if enemy.health <= 0:
                             if isinstance(enemy, Boss):
-                                enemies = [e for e in enemies if not isinstance(e, Enemy)]
-                                boss_spawned = False  #
+                                # Remove o Boss e limpa os minions invocados por ele
+                                if enemy in enemies:
+                                    enemies.remove(enemy)
+                                # Limpa qualquer minion invocado pelo Boss
+                                for minion in enemy.minions:
+                                    if minion in enemies:
+                                        enemies.remove(minion)
+                                boss_spawned = False
                                 score += 40
-                            enemies.remove(enemy)
-                            score += 10
+                            else:
+                                # Remove um inimigo comum
+                                if enemy in enemies:
+                                    enemies.remove(enemy)
+                                score += 10
 
                             # Chance de drop de um upgrade (ex: 40% de chance)
                             if random.random() < 0.4:
                                 upgrades.append(Upgrade(enemy.rect.x, enemy.rect.y))  
                         break
+
 
             # Atualização dos inimigos e verificação de colisões com o jogador
 # Dentro do loop principal do jogo, no gerenciamento dos inimigos
