@@ -37,6 +37,32 @@ def save_score(score):
     with open("scores.json", "w") as f:
         json.dump(scores, f, indent=4)
 
+# Função para gerar uma posição fora da tela
+def generate_spawn_position():
+    side = random.choice(['top', 'bottom', 'left', 'right'])
+    if side == 'top':
+        return random.randint(0, WIDTH), -50  # Acima da tela
+    elif side == 'bottom':
+        return random.randint(0, WIDTH), HEIGHT + 50  # Abaixo da tela
+    elif side == 'left':
+        return -50, random.randint(0, HEIGHT)  # À esquerda da tela
+    elif side == 'right':
+        return WIDTH + 50, random.randint(0, HEIGHT)  # À direita da tela
+
+# Função para spawnar múltiplos inimigos fora da tela
+def spawn_multiple_enemies(enemies, player, difficulty_level, enemy_speed, max_enemies=4):
+    num_enemies = random.randint(1, max_enemies)  # Define entre 1 e 4 inimigos
+    for _ in range(num_enemies):
+        enemy_type = Enemy2 if difficulty_level >= 3 and random.random() < 0.5 else Enemy
+        spawn_x, spawn_y = generate_spawn_position()
+        if(enemy_type == Enemy2):
+            new_enemy = enemy_type(difficulty_level/2, player, enemy_speed, WIDTH, HEIGHT)
+        else:
+            new_enemy = enemy_type(difficulty_level,player, enemy_speed, WIDTH, HEIGHT)
+        new_enemy.rect.x = spawn_x
+        new_enemy.rect.y = spawn_y
+        enemies.append(new_enemy)
+
 # Função para executar o jogo
 def run_game():
     # Variáveis do jogo
@@ -48,14 +74,14 @@ def run_game():
     difficulty_level = 1
     next_difficulty_increase = 100
     enemy_spawn_delay = 5000
-    enemy_speed = 1.5
+    enemy_speed = 1
     boss_spawned = False
     boss_level = 10
     game_over = False
-    score_saved = False  # Flag para salvar a pontuação apenas uma vez
+    score_saved = False  
 
     clock = pygame.time.Clock()
-    shoot_delay = 500
+    shoot_delay = player.attack_speed
     last_shot_time = pygame.time.get_ticks()
     pygame.time.set_timer(pygame.USEREVENT + 1, enemy_spawn_delay)
 
@@ -82,19 +108,15 @@ def run_game():
             if event.type == pygame.QUIT:
                 return  # Sai do jogo e retorna ao menu
             elif event.type == pygame.USEREVENT + 1 and not game_over:
-                # Gerenciamento de spawn do boss e inimigos
-                if difficulty_level == boss_level and not boss_spawned:
-                    boss = Boss(difficulty_level/10,player, enemy_speed, WIDTH, HEIGHT)
-                    enemies.append(boss)
-                    boss_level += 10
-                    boss_spawned = True
-                else:
-                    # Verifica o nível de dificuldade para spawnar inimigos
-                    if difficulty_level >= 3:
-                        enemy_type = Enemy2 if random.random() < 0.5 else Enemy
+                # Gerenciamento de spawn de inimigos com limite de 3
+                if len(enemies) < 3:
+                    if difficulty_level == boss_level and not boss_spawned:
+                        boss = Boss(difficulty_level / 10, player, enemy_speed, WIDTH, HEIGHT)
+                        enemies.append(boss)
+                        boss_level += 10
+                        boss_spawned = True
                     else:
-                        enemy_type = Enemy
-                    enemies.append(enemy_type(player, enemy_speed, WIDTH, HEIGHT))
+                        spawn_multiple_enemies(enemies, player, difficulty_level, enemy_speed)  # Spawn múltiplos inimigos
 
             elif game_over and event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                 reset_game()  # Reinicia o jogo ao pressionar 'R'
@@ -108,7 +130,7 @@ def run_game():
             # Tiro automático do jogador
             current_time = pygame.time.get_ticks()
             if enemies and current_time - last_shot_time > shoot_delay:
-                closest_enemy = min(enemies, key=lambda e: (player.rect.centerx - e.rect.centerx)**2 + (player.rect.centery - e.rect.centery)**2)
+                closest_enemy = min(enemies, key=lambda e: (player.rect.centerx - e.rect.centerx) ** 2 + (player.rect.centery - e.rect.centery) ** 2)
                 bullets.append(Bullet(player.rect.centerx, player.rect.centery, closest_enemy))
                 last_shot_time = current_time
 
@@ -117,47 +139,39 @@ def run_game():
                 bullet.update()
                 for enemy in enemies[:]:
                     if bullet.rect.colliderect(enemy.rect):
-                        enemy.health -= 1
+                        enemy.health -= player.attack_power
                         bullets.remove(bullet)
                         if enemy.health <= 0:
                             if isinstance(enemy, Boss):
                                 # Remove o Boss e limpa os minions invocados por ele
                                 if enemy in enemies:
                                     enemies.remove(enemy)
-                                # Limpa qualquer minion invocado pelo Boss
                                 for minion in enemy.minions:
                                     if minion in enemies:
                                         enemies.remove(minion)
                                 boss_spawned = False
                                 score += 40
                             else:
-                                # Remove um inimigo comum
                                 if enemy in enemies:
                                     enemies.remove(enemy)
                                 score += 10
 
-                            # Chance de drop de um upgrade (ex: 40% de chance)
                             if random.random() < 0.4:
                                 upgrades.append(Upgrade(enemy.rect.x, enemy.rect.y))  
                         break
 
-
-            # Atualização dos inimigos e verificação de colisões com o jogador
-# Dentro do loop principal do jogo, no gerenciamento dos inimigos
             for enemy in enemies[:]:
                 enemy.update()
-                # Colisão com o jogador, causando dano
                 if player.rect.colliderect(enemy.rect):
                     if isinstance(enemy, Boss):
-                        player.health -= 1  # Diminui vida do jogador quando colide com o Boss
-                    elif isinstance(enemy, Enemy):  # Para os minions
-                        player.health -= 1  # Diminui vida do jogador quando colide com minions
+                        player.health -= 1  
+                    elif isinstance(enemy, Enemy):  
+                        player.health -= 1  
                         enemies.remove(enemy)
-                   
+                    elif isinstance(enemy, Enemy2):
+                        player.health -= 1  
+                        enemies.remove(enemy)
 
-           
-
-            # Aumenta a dificuldade a cada 100 pontos
             if score >= next_difficulty_increase:
                 difficulty_level += 1
                 enemy_speed += 0.1
@@ -165,29 +179,24 @@ def run_game():
                 pygame.time.set_timer(pygame.USEREVENT + 1, enemy_spawn_delay)
                 next_difficulty_increase += 100
 
-            # Verificação de coleta de upgrades pelo jogador
             for upgrade in upgrades[:]:
                 if player.rect.colliderect(upgrade.rect):
                     player.apply_upgrade(upgrade.type)
                     upgrades.remove(upgrade)
 
-        # Renderização dos elementos na tela
         screen.blit(BACKGROUND_IMAGE, (0, 0))
         player.draw(screen)
 
-        # Desenha cada inimigo e projétil do boss (se existir)
         for enemy in enemies:
             if isinstance(enemy, Boss):
-                enemy.update()  # Atualiza boss e minions
+                enemy.update()
             enemy.draw(screen)
         for bullet in bullets:
             bullet.draw(screen)
 
-        # Desenha a vida do jogador
         for i in range(player.health):
             screen.blit(HEART_IMAGE, (10 + i * 25, 10))
 
-        # Pontuação e nível na tela
         font = pygame.font.Font(None, 36)
         score_text = font.render(f"Score: {score}", True, (255, 255, 255))
         screen.blit(score_text, (WIDTH - 150, 10))
@@ -211,7 +220,6 @@ def run_game():
             restart_text = font.render("Pressione 'R' para reiniciar", True, (255, 255, 255))
             screen.blit(restart_text, (WIDTH // 2 - restart_text.get_width() // 2, HEIGHT // 2 + 40))
 
-        # Renderiza upgrades na tela
         for upgrade in upgrades:
             upgrade.draw(screen)
 

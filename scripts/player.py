@@ -72,6 +72,8 @@ class Player:
             self.attack_speed = max(200, self.attack_speed - 5)  # Reduz o tempo entre tiros
         elif upgrade_type == "attack_power":
             self.attack_power += 0.5  # Aumenta o dano do ataque
+        elif upgrade_type == "health":
+            self.health += 1  # Aumenta a vida
 
     def update(self):
         # Animação

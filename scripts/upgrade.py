@@ -9,7 +9,7 @@ class Upgrade:
         
         self.x = x
         self.y = y
-        self.types = ["speed", "attack_speed", "attack_power"]
+        self.types = ["speed", "attack_speed", "attack_power", "health"]
         self.type = random.choice(self.types)
         
         # Aqui removemos a imagem e vamos desenhar círculos
@@ -25,6 +25,8 @@ class Upgrade:
             return (255, 165, 0)  # Laranja
         elif upgrade_type == "attack_power":
             return (255, 69, 0)  # Vermelho alaranjado
+        elif upgrade_type == "health":
+            return (0, 255, 0)  # Verde
         return (255, 255, 255)  # Branco como fallback
 
     def draw(self, screen):
