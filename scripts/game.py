@@ -111,7 +111,7 @@ def run_game():
                 # Gerenciamento de spawn de inimigos com limite de 3
                 if len(enemies) < 3:
                     if difficulty_level == boss_level and not boss_spawned:
-                        boss = Boss(difficulty_level / 10, player, enemy_speed, WIDTH, HEIGHT)
+                        boss = Boss(difficulty_level / 10, player, 1.5 , WIDTH, HEIGHT)
                         enemies.append(boss)
                         boss_level += 10
                         boss_spawned = True

@@ -42,7 +42,6 @@ class Boss(Enemy):
         self.current_sprite = self.images[0]
         self.health = 50 * dificulty  
 
-        print(self.health)
 
         # Padrões de ataque
         self.attack_pattern = 0
