@@ -67,11 +67,11 @@ class Player:
     def apply_upgrade(self, upgrade_type):
         """Aplica um upgrade ao jogador"""
         if upgrade_type == "speed":
-            self.speed += 0.1  # Aumenta a velocidade
+            self.speed += 0.2  # Aumenta a velocidade
         elif upgrade_type == "attack_speed":
             self.attack_speed = max(200, self.attack_speed - 5)  # Reduz o tempo entre tiros
         elif upgrade_type == "attack_power":
-            self.attack_power += 0.5  # Aumenta o dano do ataque
+            self.attack_power += 1  # Aumenta o dano do ataque
         elif upgrade_type == "health":
             self.health += 1  # Aumenta a vida
 
