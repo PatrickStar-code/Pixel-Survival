@@ -2,12 +2,12 @@ import pygame
 import os
 import random
 import json
-from player import Player
-from enemy import Enemy
-from enemy2 import Enemy2
-from bullet import Bullet
-from boss import Boss
-from upgrade import Upgrade  
+from scripts.enemy import Enemy
+from scripts.enemy2 import Enemy2
+from scripts.bullet import Bullet
+from scripts.boss import Boss
+from scripts.player import Player
+from scripts.upgrade import Upgrade  
 
 # Inicializa o Pygame
 pygame.init()
@@ -18,9 +18,9 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Pixel Survival")
 
 # Carrega o fundo e a imagem de coração
-BACKGROUND_IMAGE = pygame.image.load(os.path.join("assets/images", "background.png"))
+BACKGROUND_IMAGE = pygame.image.load(os.path.join("assets", "background.png"))
 BACKGROUND_IMAGE = pygame.transform.scale(BACKGROUND_IMAGE, (WIDTH, HEIGHT))
-HEART_IMAGE = pygame.image.load(os.path.join("assets/images", "heart.png"))
+HEART_IMAGE = pygame.image.load(os.path.join("assets", "heart.png"))
 HEART_IMAGE = pygame.transform.scale(HEART_IMAGE, (40, 40))
 
 # Função para salvar a pontuação em um arquivo JSON

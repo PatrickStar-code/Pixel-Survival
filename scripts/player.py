@@ -5,7 +5,7 @@ import random
 class Player:
     def __init__(self, x, y, speed, scale_factor=2.0):  
         # Parâmetros iniciais do jogador
-        self.tileset = pygame.image.load(os.path.join("assets/images", "player_tileset.png"))
+        self.tileset = pygame.image.load(os.path.join("assets", "player_tileset.png"))
         self.tileset_width = self.tileset.get_width() // 4  # 4 colunas
         self.tileset_height = self.tileset.get_height() // 4  # 4 linhas
 

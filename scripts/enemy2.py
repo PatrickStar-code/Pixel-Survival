@@ -8,9 +8,9 @@ class Enemy2:
         # Carregar e redimensionar as imagens de animação
         self.images = [
             pygame.transform.scale(
-                pygame.image.load(os.path.join("assets/images/enemy", f"CrabMoving{i + 1}.png")),
-                (int(pygame.image.load(os.path.join("assets/images/enemy", f"CrabMoving{i + 1}.png")).get_width() * scale_factor),
-                 int(pygame.image.load(os.path.join("assets/images/enemy", f"CrabMoving{i + 1}.png")).get_height() * scale_factor))
+                pygame.image.load(os.path.join("assets", f"CrabMoving{i + 1}.png")),
+                (int(pygame.image.load(os.path.join("assets", f"CrabMoving{i + 1}.png")).get_width() * scale_factor),
+                 int(pygame.image.load(os.path.join("assets", f"CrabMoving{i + 1}.png")).get_height() * scale_factor))
             ) for i in range(4)
         ]
 

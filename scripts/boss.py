@@ -3,13 +3,13 @@ import random
 import os
 import math
 
-from enemy import Enemy  # Minions que o Boss invocará
-from projectile import Projectile
+from scripts.enemy import Enemy  # Minions que o Boss invocará
+from scripts.projectile import Projectile
 
 class Boss(Enemy):
     def __init__(self, dificulty ,player, speed, screen_width, screen_height, scale_factor=2.0):
         # Carregar o tileset do Boss
-        tileset_path = os.path.join("assets/images/enemy", "bossTileSet.png")
+        tileset_path = os.path.join("assets", "bossTileSet.png")
         tileset = pygame.image.load(tileset_path)
         
         # Configuração do sprite do Boss
